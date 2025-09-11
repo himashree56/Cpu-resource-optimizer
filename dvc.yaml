@@ -1,0 +1,15 @@
+stages:
+  train:
+    cmd: python train.py
+    deps:
+      - train.py
+      - Dataset/data-1756126612050.csv
+    outs:
+      - LinearRegression_model.pkl
+      - RandomForestRegressor_model.pkl
+    params:
+      - model.random_forest.n_estimators
+      - model.random_forest.max_depth
+      - model.random_forest.min_samples_split
+      - model.random_forest.n_jobs
+      - model.random_forest.random_state
