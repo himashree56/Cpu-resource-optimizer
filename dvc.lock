@@ -1,0 +1,29 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python train.py
+    deps:
+    - path: Dataset/data-1756126612050.csv
+      hash: md5
+      md5: 448de498a9f801b2a2f00c733ae192f5
+      size: 310056916
+    - path: train.py
+      hash: md5
+      md5: df7949cf028056f36b62bd6058c79dda
+      size: 4532
+    params:
+      params.yaml:
+        model.random_forest.max_depth: 10
+        model.random_forest.min_samples_split: 5
+        model.random_forest.n_estimators: 100
+        model.random_forest.n_jobs: -1
+        model.random_forest.random_state: 42
+    outs:
+    - path: LinearRegression_model.pkl
+      hash: md5
+      md5: ca9ef61dfc4ae63a17e9586738c57fc1
+      size: 3635
+    - path: RandomForestRegressor_model.pkl
+      hash: md5
+      md5: 17ff834de89285b8df5f31c09f8a7197
+      size: 8608586

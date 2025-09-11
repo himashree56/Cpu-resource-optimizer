@@ -5,6 +5,7 @@ import numpy as np
 import joblib
 import yaml
 import subprocess
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -61,7 +62,7 @@ with open("params.yaml") as f:
 rf_params = params["model"]["random_forest"]
 
 # -----------------------------
-# 6. Utility: log Git + DVC metadata
+# 6. Utility: log Git + DVC metadata + params.yaml
 # -----------------------------
 def log_metadata():
     try:
@@ -80,6 +81,12 @@ def log_metadata():
     except Exception:
         print("⚠️ Could not log DVC data hash")
 
+    try:
+        if os.path.exists("params.yaml"):
+            mlflow.log_artifact("params.yaml")
+    except Exception:
+        print("⚠️ Could not log params.yaml")
+
 # -----------------------------
 # 7. Train & Log models with MLflow
 # -----------------------------
@@ -89,7 +96,6 @@ def train_and_log(model, model_name):
         log_metadata()
 
         pipeline = Pipeline(steps=[("preprocessor", preprocessor), ("regressor", model)])
-
         pipeline.fit(X_train, y_train)
         y_pred = pipeline.predict(X_test)
 
@@ -109,7 +115,7 @@ def train_and_log(model, model_name):
         joblib.dump(pipeline, model_filename)
         mlflow.log_artifact(model_filename)
 
-        print(f"✅ {model_name} training complete. Metrics & model logged to DagsHub 🚀")
+        print(f"✅ {model_name} training complete. Metrics, params.yaml & model logged to DagsHub 🚀")
 
 # -----------------------------
 # 8. Run both models
@@ -125,4 +131,5 @@ train_and_log(
     ),
     "RandomForestRegressor",
 )
+
 print("🏁 All done!")
