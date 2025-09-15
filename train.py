@@ -6,6 +6,8 @@ import joblib
 import yaml
 import subprocess
 import os
+import shap
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -72,7 +74,7 @@ def log_metadata():
         print("⚠️ Could not log Git commit")
 
     try:
-        with open("Dataset/data-1756126612050.csv.dvc") as f:
+        with open("Dataset/data-1754297123597.csv") as f:
             for line in f:
                 if line.strip().startswith("md5:"):
                     dvc_hash = line.split(":")[1].strip()
@@ -88,7 +90,7 @@ def log_metadata():
         print("⚠️ Could not log params.yaml")
 
 # -----------------------------
-# 7. Train & Log models with MLflow
+# 7. Train & Log models with MLflow + SHAP
 # -----------------------------
 def train_and_log(model, model_name):
     with mlflow.start_run(run_name=model_name):
@@ -115,7 +117,52 @@ def train_and_log(model, model_name):
         joblib.dump(pipeline, model_filename)
         mlflow.log_artifact(model_filename)
 
-        print(f"✅ {model_name} training complete. Metrics, params.yaml & model logged to DagsHub 🚀")
+        # -----------------------------
+        # SHAP Explainability
+        # -----------------------------
+        try:
+            # Transform test set (so SHAP sees encoded features)
+            X_test_transformed = pipeline.named_steps["preprocessor"].transform(X_test)
+
+            if model_name == "RandomForestRegressor":
+                explainer = shap.TreeExplainer(model)
+                shap_values = explainer.shap_values(X_test_transformed)
+            else:  # Linear Regression
+                explainer = shap.LinearExplainer(model, X_train)
+                shap_values = explainer.shap_values(X_test_transformed)
+
+            # Global SHAP summary plot
+            plt.figure()
+            shap.summary_plot(
+                shap_values,
+                X_test_transformed,
+                feature_names=pipeline.named_steps["preprocessor"].get_feature_names_out(),
+                show=False
+            )
+            shap_plot_path = f"shap_summary_{model_name}.png"
+            plt.savefig(shap_plot_path, bbox_inches="tight")
+            plt.close()
+            mlflow.log_artifact(shap_plot_path, artifact_path="shap_plots")
+
+            # Per-instance SHAP force plots (for first 5 samples)
+            for i in range(min(5, X_test_transformed.shape[0])):
+                plt.figure()
+                shap.force_plot(
+                    explainer.expected_value,
+                    shap_values[i],
+                    matplotlib=True,
+                    feature_names=pipeline.named_steps["preprocessor"].get_feature_names_out(),
+                    show=False
+                )
+                force_plot_path = f"shap_force_{model_name}_sample{i}.png"
+                plt.savefig(force_plot_path, bbox_inches="tight")
+                plt.close()
+                mlflow.log_artifact(force_plot_path, artifact_path="shap_force_plots")
+
+        except Exception as e:
+            print(f"⚠️ SHAP explanation failed for {model_name}: {e}")
+
+        print(f"✅ {model_name} training complete. Metrics, SHAP & model logged to DagsHub 🚀")
 
 # -----------------------------
 # 8. Run both models
@@ -132,4 +179,22 @@ train_and_log(
     "RandomForestRegressor",
 )
 
-print("🏁 All done!")
+print("🏁 All done with SHAP explanations!")
+# Debug SHAP after training RandomForest
+pipeline = joblib.load("RandomForestRegressor_model.pkl")
+X_test_transformed = pipeline.named_steps["preprocessor"].transform(X_test)
+model = pipeline.named_steps["regressor"]
+
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_test_transformed)
+
+plt.figure()
+shap.summary_plot(
+    shap_values,
+    X_test_transformed,
+    feature_names=pipeline.named_steps["preprocessor"].get_feature_names_out(),
+    show=False
+)
+plt.savefig("debug_shap.png", bbox_inches="tight")
+plt.close()
+print("✅ Saved debug_shap.png locally")

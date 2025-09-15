@@ -3,7 +3,7 @@ stages:
     cmd: python train.py
     deps:
       - train.py
-      - Dataset/data-1756126612050.csv
+      - Dataset\data-1754297123597.csv
     outs:
       - LinearRegression_model.pkl
       - RandomForestRegressor_model.pkl
