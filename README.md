@@ -72,13 +72,12 @@ This command:
 python train.py
 ```
 
-### 3. View MLflow experiments
-```bash
-mlflow ui
-```
-Then visit: [https://dagshub.com/himashree56/Cpu-resource-optimizer.mlflow/#/experiments](https://dagshub.com/himashree56/Cpu-resource-optimizer.mlflow/#/experiments)
+## 3. View MLflow experiments
 
----
+You can view experiments directly on DagsHub:
+
+[View Experiments on DagsHub](https://dagshub.com/himashree56/Cpu-resource-optimizer/experiments)
+
 
 ## 🔧 Configuration
 
